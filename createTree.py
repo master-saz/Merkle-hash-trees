@@ -19,7 +19,10 @@ def merkle_tree(n, prefix1, prefix2):
     tree = []
     for i in range(n):
         file_path = f'docs/doc{i}.dat'
-        tree.append((0, i, hash_file(file_path, prefix1)))
+        doc_hash = hash_file(file_path, prefix1)
+        tree.append((0, i, doc_hash))
+        with open(f'nodes/node{0}.{i}', 'w') as f:
+            f.write(doc_hash)
 
     i = 0
     while len(tree) > 1:
@@ -109,5 +112,5 @@ if __name__ == '__main__':
     #merkle_root = merkle_tree(list(map(hash_data, data_list)))[0]
     prefix1 = bytes.fromhex('353535353535')
     prefix2 = bytes.fromhex('e8e8e8e8e8e8')
-    merkle_root = merkle_tree(4, prefix1, prefix2)
+    merkle_root = merkle_tree(2, prefix1, prefix2)
     print(merkle_root)
