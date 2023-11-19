@@ -16,6 +16,7 @@ def hash_file(file_path, prefix):
 
 
 def merkle_tree(n, prefix1, prefix2):
+    open("temp.txt", 'w').close()
     tree = []
     for i in range(n):
         file_path = f'docs/doc{i}.dat'
@@ -24,6 +25,10 @@ def merkle_tree(n, prefix1, prefix2):
         with open(f'nodes/node{0}.{i}', 'w') as f:
             f.write(doc_hash)
 
+        with open(f'temp.txt', 'a') as f:
+            public_info = f"\n{0}:{1}:{doc_hash}"  # update tree.txt
+            f.write(public_info)
+
     i = 0
     while len(tree) > 1:
         new_level = []
@@ -31,10 +36,33 @@ def merkle_tree(n, prefix1, prefix2):
             if j + 1 < len(tree):
                 combined_hash = hashlib.sha1(prefix2 + bytes.fromhex(tree[j][2]) + bytes.fromhex(tree[j + 1][2])).hexdigest()
                 new_level.append((i + 1, j // 2, combined_hash))
+                with open(f'nodes/node{i+1}.{j // 2}', 'w') as f:
+                    f.write(combined_hash)
+
+                with open(f'temp.txt', 'a') as f:
+                    public_info = f"\n{i+1}:{j // 2}:{combined_hash}" #update tree.txt
+                    f.write(public_info)
             else:
                 new_level.append((i + 1, j // 2, tree[j][2]))
+                with open(f'nodes/node{i+1}.{j // 2}', 'w') as f:
+                    f.write(tree[j][2])
+
+                with open(f'temp.txt', 'a') as f:
+                    public_info = f"\n{i+1}:{j // 2}:{tree[j][2]}" #update tree.txt
+                    f.write(public_info)
         tree = new_level
         i += 1
+
+    f = open('temp.txt', 'r')
+    temp = f.read()
+    f.close()
+
+    f = open('tree.txt', 'w')
+    public_info = f"MerkleTree:sha1:{prefix1.hex()}:{prefix2.hex()}:{n}:{i}:{tree[0][-1]}"  # public info of the hash tree
+    f.write(public_info)
+
+    f.write(temp)
+    f.close()
 
     return tree[0]
 
