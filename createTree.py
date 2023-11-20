@@ -2,6 +2,7 @@
 import os
 import hashlib
 import sys
+import math
 
 
 def create_headers(name):
@@ -26,7 +27,7 @@ def merkle_tree(n, prefix1, prefix2):
             f.write(doc_hash)
 
         with open(f'temp.txt', 'a') as f:
-            public_info = f"\n{0}:{1}:{doc_hash}"  # update tree.txt
+            public_info = f"\n{0}:{i}:{doc_hash}"  # update tree.txt
             f.write(public_info)
 
     i = 0
@@ -73,19 +74,23 @@ def update_tree(new_doc, prefix1, prefix2):
 
     header = lines[0].strip().split(':')
     n = int(header[4])
-    depth = int(header[5])
+    #depth = int(header[5])
 
-    new_leaf = (0, n, hash_file(new_doc, prefix1))
-    tree = [tuple(map(int, line.strip().split(':'))) for line in lines[1:]]
+    new_leaf = (f"{0}", f"{n}", hash_file(new_doc, prefix1))
+    tree = [tuple(map(str, line.strip().split(':'))) for line in lines[1:]]
     tree.append(new_leaf)
 
+    # TODO - remember this
+    depth = math.ceil(int(new_leaf[1])+1/2)
     for i in range(depth - 1):
-        parent = (i + 1, n // 2, hashlib.sha1(prefix2 + bytes.fromhex(tree[-2][2]) + bytes.fromhex(tree[-1][2])).hexdigest())
+        parent = (f"{i + 1}", f"{n // 2}", hashlib.sha1(prefix2 + bytes.fromhex(tree[-2][2]) + bytes.fromhex(tree[-1][2])).hexdigest())
         tree.append(parent)
         n //= 2
 
+    tree = sorted(tree, key=lambda element: (element[0], element[1]))
+
     with open('tree.txt', 'w') as f:
-        f.write(':'.join(header[:4] + [str(int(header[4]) + 1), header[5], tree[-1][2]]) + '\n')
+        f.write(':'.join(header[:4] + [str(int(header[4]) + 1), str(depth-1), tree[-1][2]]) + '\n')
         for node in tree:
             f.write(':'.join(map(str, node)) + '\n')
 
@@ -95,6 +100,7 @@ def generate_proof(doc, position):
         lines = f.readlines()
 
     tree = [tuple(map(int, line.strip().split(':'))) for line in lines[1:]]
+    print(tree)
     proof = []
 
     i = 0
@@ -142,3 +148,5 @@ if __name__ == '__main__':
     prefix2 = bytes.fromhex('e8e8e8e8e8e8')
     merkle_root = merkle_tree(2, prefix1, prefix2)
     print(merkle_root)
+
+    update_tree(f'docs/doc2.dat', prefix1, prefix2)
