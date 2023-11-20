@@ -80,7 +80,6 @@ def update_tree(new_doc, prefix1, prefix2):
     tree = [tuple(map(str, line.strip().split(':'))) for line in lines[1:]]
     tree.append(new_leaf)
 
-    # TODO - remember this, check how the hash is created for empty nodes
     depth = math.ceil(int(new_leaf[1])+1/2)
     #print(tree)
     tmp_dict = dict((f"{x}{y}", h) for x, y , h in tree)
@@ -102,6 +101,8 @@ def update_tree(new_doc, prefix1, prefix2):
             parent = (f"{i + 1}", f"{n // 2}", hashlib.sha1(prefix2 + bytes.fromhex(tmp_dict[f"{i}{n}"]) + bytes.fromhex(hash)).hexdigest())
         tree.append(parent)
         tmp_dict[f"{i+1}{n // 2}"]=parent[2]
+        with open(f'nodes/node{i + 1}.{n // 2}', 'w') as f:
+            f.write(parent[2])
         n //= 2
     #print(tmp_dict)
     tree = sorted(tree, key=lambda element: (element[0], element[1]))
@@ -116,20 +117,45 @@ def generate_proof(doc, position):
     with open('tree.txt', 'r') as f:
         lines = f.readlines()
 
-    tree = [tuple(map(int, line.strip().split(':'))) for line in lines[1:]]
-    print(tree)
-    proof = []
+    header = lines[0].strip().split(':')
+    depth = int(header[5])
 
+    tree = [tuple(map(str, line.strip().split(':'))) for line in lines[1:]]
+    tmp_dict = dict((f"{x}{y}", h) for x, y, h in tree)
+
+    proof = []
     i = 0
     j = position
-    while i < len(tree) and tree[i][0] != 0:
+    #proof.append(f"node{i}.{j}")
+    try:
+        hash = tmp_dict[f"{i}{j}"]
+    except:
+        hash = ""
+    proof.append((f"{i}", f"{j}", hash))
+
+    while i < depth and tree[i][0] != 0:
         if j % 2 == 0:
-            proof.append(tree[i + j + 1])
+            #print(f"node{i} {j+1}")
+            #proof.append(f"node{i}.{j+1}")
+            try:
+                hash= tmp_dict[f"{i}{j+1}"]
+                proof.append((f"{i}", f"{j + 1}", hash))
+            except:
+                hash=""
+
         else:
-            proof.append(tree[i + j - 1])
-        i += 2 ** tree[i][0]
+            #print(f"node{i} {j - 1}")
+            #proof.append(f"node{i}.{j-1}")
+            try:
+                hash= tmp_dict[f"{i}{j-1}"]
+                proof.append((f"{i}", f"{j - 1}", hash))
+            except:
+                hash=""
+
+        i += 2 ** int(tree[i][0])
         j //= 2
 
+    #print(proof)
     return proof
 
 
@@ -142,16 +168,18 @@ def verify_proof(doc, proof):
     prefix2 = bytes.fromhex(header[3])
     root_hash = header[6]
 
-    current_hash = hash_file(doc, prefix1)
-    position = proof[0][1]
-
+    current_hash = ""
+    #print(position)
     for node in proof:
-        if position % 2 == 0:
+        #print(f"current: {node[2]}")
+        combined_hash = hashlib.sha1(prefix2 + bytes.fromhex(current_hash) + bytes.fromhex(node[2])).hexdigest()
+        """if position % 2 == 0:
             combined_hash = hashlib.sha1(prefix2 + bytes.fromhex(current_hash) + bytes.fromhex(node[2])).hexdigest()
         else:
-            combined_hash = hashlib.sha1(prefix2 + bytes.fromhex(node[2]) + bytes.fromhex(current_hash)).hexdigest()
+            combined_hash = hashlib.sha1(prefix2 + bytes.fromhex(node[2]) + bytes.fromhex(current_hash)).hexdigest()"""
         current_hash = combined_hash
-        position //= 2
+        #print(f"combined: {current_hash}")
+        #position //= 2
 
     return current_hash == root_hash
 
@@ -165,5 +193,9 @@ if __name__ == '__main__':
     prefix2 = bytes.fromhex('e8e8e8e8e8e8')
     merkle_root = merkle_tree(2, prefix1, prefix2)
     #print(merkle_root)
+    print(f"Root: {merkle_root}")
 
     update_tree(f'docs/doc2.dat', prefix1, prefix2)
+    proof = generate_proof("",2) #position being 0.x
+    print(f"Proof: {proof}")
+    print(f"Verifying proof: {verify_proof("", proof)}")
