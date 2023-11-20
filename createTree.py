@@ -80,13 +80,30 @@ def update_tree(new_doc, prefix1, prefix2):
     tree = [tuple(map(str, line.strip().split(':'))) for line in lines[1:]]
     tree.append(new_leaf)
 
-    # TODO - remember this
+    # TODO - remember this, check how the hash is created for empty nodes
     depth = math.ceil(int(new_leaf[1])+1/2)
-    for i in range(depth - 1):
-        parent = (f"{i + 1}", f"{n // 2}", hashlib.sha1(prefix2 + bytes.fromhex(tree[-2][2]) + bytes.fromhex(tree[-1][2])).hexdigest())
-        tree.append(parent)
-        n //= 2
+    #print(tree)
+    tmp_dict = dict((f"{x}{y}", h) for x, y , h in tree)
 
+    for i in range(depth - 1):
+        # check if node is odd or even, to determine how you get the hash (previous one or next/empty one).
+
+        if n % 2==0: #using the next one
+            try:
+                hash = tmp_dict[f"{i}{n+1}"]
+            except:
+                hash = ""
+            parent = (f"{i + 1}", f"{n // 2}",hashlib.sha1(prefix2 + bytes.fromhex(tmp_dict[f"{i}{n}"]) + bytes.fromhex(hash)).hexdigest())
+        else: # using the previous one
+            try:
+                hash = tmp_dict[f"{i}{n-1}"]
+            except:
+                hash = ""
+            parent = (f"{i + 1}", f"{n // 2}", hashlib.sha1(prefix2 + bytes.fromhex(tmp_dict[f"{i}{n}"]) + bytes.fromhex(hash)).hexdigest())
+        tree.append(parent)
+        tmp_dict[f"{i+1}{n // 2}"]=parent[2]
+        n //= 2
+    #print(tmp_dict)
     tree = sorted(tree, key=lambda element: (element[0], element[1]))
 
     with open('tree.txt', 'w') as f:
@@ -147,6 +164,6 @@ if __name__ == '__main__':
     prefix1 = bytes.fromhex('353535353535')
     prefix2 = bytes.fromhex('e8e8e8e8e8e8')
     merkle_root = merkle_tree(2, prefix1, prefix2)
-    print(merkle_root)
+    #print(merkle_root)
 
     update_tree(f'docs/doc2.dat', prefix1, prefix2)
