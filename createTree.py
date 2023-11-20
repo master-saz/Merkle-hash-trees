@@ -168,32 +168,24 @@ def verify_proof(doc, proof):
     prefix2 = bytes.fromhex(header[3])
     root_hash = header[6]
 
-    current_hash = ""
+    current_hash = "" #TODO this might be a problem
     #print(position)
     for node in proof:
         #print(f"current: {node[2]}")
         combined_hash = hashlib.sha1(prefix2 + bytes.fromhex(current_hash) + bytes.fromhex(node[2])).hexdigest()
-        """if position % 2 == 0:
-            combined_hash = hashlib.sha1(prefix2 + bytes.fromhex(current_hash) + bytes.fromhex(node[2])).hexdigest()
-        else:
-            combined_hash = hashlib.sha1(prefix2 + bytes.fromhex(node[2]) + bytes.fromhex(current_hash)).hexdigest()"""
         current_hash = combined_hash
-        #print(f"combined: {current_hash}")
-        #position //= 2
 
     return current_hash == root_hash
 
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    #create_headers('PyCharm')
-    #data_list = ["data1", "data2", "data3", "data4"]
-    #merkle_root = merkle_tree(list(map(hash_data, data_list)))[0]
+
     prefix1 = bytes.fromhex('353535353535')
     prefix2 = bytes.fromhex('e8e8e8e8e8e8')
     merkle_root = merkle_tree(2, prefix1, prefix2)
     #print(merkle_root)
-    print(f"Root: {merkle_root}")
+    print(f"Original Root: {merkle_root}")
 
     update_tree(f'docs/doc2.dat', prefix1, prefix2)
     proof = generate_proof("",2) #position being 0.x
