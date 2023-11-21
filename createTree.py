@@ -74,17 +74,16 @@ def update_tree(new_doc, prefix1, prefix2):
 
     header = lines[0].strip().split(':')
     n = int(header[4])
-    #depth = int(header[5])
 
     new_leaf = (f"{0}", f"{n}", hash_file(new_doc, prefix1))
     tree = [tuple(map(str, line.strip().split(':'))) for line in lines[1:]]
     tree.append(new_leaf)
 
-    depth = math.ceil(int(new_leaf[1])+1/2)
+    depth = math.ceil(math.log(n+1, 2))
     #print(tree)
     tmp_dict = dict((f"{x}{y}", h) for x, y , h in tree)
 
-    for i in range(depth - 1):
+    for i in range(depth):
         # check if node is odd or even, to determine how you get the hash (previous one or next/empty one).
 
         if n % 2==0: #using the next one
@@ -113,7 +112,7 @@ def update_tree(new_doc, prefix1, prefix2):
     tree = sorted(tree, key=lambda element: (element[0], element[1]))
 
     with open('tree.txt', 'w') as f:
-        f.write(':'.join(header[:4] + [str(int(header[4]) + 1), str(depth-1), tree[-1][2]]) + '\n')
+        f.write(':'.join(header[:4] + [str(int(header[4]) + 1), str(depth), tree[-1][2]]) + '\n')
         for node in tree:
             f.write(':'.join(map(str, node)) + '\n')
 
