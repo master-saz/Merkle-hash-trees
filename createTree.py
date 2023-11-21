@@ -93,7 +93,7 @@ def update_tree(new_doc, prefix1, prefix2):
                           hashlib.sha1(prefix2 + bytes.fromhex(tmp_dict[f"{i}{n}"]) + bytes.fromhex(hash)).hexdigest())
             except:
                 parent = (f"{i + 1}", f"{n // 2}", hashlib.sha1(prefix2 + bytes.fromhex(tmp_dict[f"{i}{n}"])).hexdigest())
-
+            tree.append(parent)
         else: # using the previous one
             try:
                 hash = tmp_dict[f"{i}{n-1}"]
@@ -103,7 +103,10 @@ def update_tree(new_doc, prefix1, prefix2):
             except:
                 parent = (f"{i + 1}", f"{n // 2}", hashlib.sha1(prefix2 + bytes.fromhex(tmp_dict[f"{i}{n}"])).hexdigest())
 
-        tree.append(parent)
+            for node in tree: # deal with duplicates
+                if int(node[0])==i+1 and int(node[1]) == n//2:
+                    tree.remove(node)
+            tree.append(parent)
         tmp_dict[f"{i+1}{n // 2}"]=parent[2]
         with open(f'nodes/node{i + 1}.{n // 2}', 'w') as f:
             f.write(parent[2])
@@ -180,7 +183,7 @@ def verify_proof(doc, proof):
                 combined_hash = hashlib.sha1(prefix2 + bytes.fromhex(current_hash)).hexdigest()
             #print(f"current: {node[2]}")
             else:
-                combined_hash = hashlib.sha1(prefix2 + bytes.fromhex(node[2]) + bytes.fromhex(current_hash)).hexdigest()
+                combined_hash = hashlib.sha1(prefix2 + bytes.fromhex(current_hash) + bytes.fromhex(node[2])).hexdigest()
         current_hash = combined_hash
         #print(combined_hash)
 
