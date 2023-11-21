@@ -112,7 +112,7 @@ def update_tree(new_doc, prefix1, prefix2):
     tree = sorted(tree, key=lambda element: (element[0], element[1]))
 
     with open('tree.txt', 'w') as f:
-        f.write(':'.join(header[:4] + [str(int(header[4]) + 1), str(depth), tree[-1][2]]) + '\n')
+        f.write(':'.join(header[:4] + [str(int(header[4]) + 1), str(depth+1), tree[-1][2]]) + '\n')
         for node in tree:
             f.write(':'.join(map(str, node)) + '\n')
 
@@ -130,15 +130,8 @@ def generate_proof(doc, position):
     proof = []
     i = 0
     j = position
-    #proof.append(f"node{i}.{j}")
-    """try:
-        hash = tmp_dict[f"{i}{j}"]
-    except:
-        print("document doesn't exist")
-        sys.exit(0)
-    proof.append((f"{i}", f"{j}", hash))"""
 
-    while i < depth and tree[i][0] != 0:
+    while i < depth-1:
         if j % 2 == 0:
             #print(f"node{i} {j+1}")
             #proof.append(f"node{i}.{j+1}")
@@ -157,7 +150,7 @@ def generate_proof(doc, position):
             except:
                 proof.append((f"{i}", f"{j - 1}", ""))
 
-        i += 2 ** int(tree[i][0])
+        i += 1
         j //= 2
 
     #print(proof)
@@ -199,11 +192,11 @@ if __name__ == '__main__':
 
     prefix1 = bytes.fromhex('353535353535')
     prefix2 = bytes.fromhex('e8e8e8e8e8e8')
-    merkle_root = merkle_tree(2, prefix1, prefix2)
+    merkle_root = merkle_tree(4, prefix1, prefix2)
     #print(merkle_root)
     print(f"Original Root: {merkle_root}")
 
-    update_tree(f'docs/doc2.dat', prefix1, prefix2)
-    proof = generate_proof("",2) #position being 0.x
+    update_tree(f'docs/doc4.dat', prefix1, prefix2)
+    proof = generate_proof("",4) #position being 0.x
     print(f"Proof: {proof}")
-    print(f"Verifying proof: {verify_proof("docs/doc2.dat", proof)}")
+    print(f"Verifying proof: {verify_proof("docs/doc4.dat", proof)}")
