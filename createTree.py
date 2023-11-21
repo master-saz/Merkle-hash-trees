@@ -90,15 +90,20 @@ def update_tree(new_doc, prefix1, prefix2):
         if n % 2==0: #using the next one
             try:
                 hash = tmp_dict[f"{i}{n+1}"]
+                parent = (f"{i + 1}", f"{n // 2}",
+                          hashlib.sha1(prefix2 + bytes.fromhex(tmp_dict[f"{i}{n}"]) + bytes.fromhex(hash)).hexdigest())
             except:
-                hash = ""
-            parent = (f"{i + 1}", f"{n // 2}",hashlib.sha1(prefix2 + bytes.fromhex(tmp_dict[f"{i}{n}"]) + bytes.fromhex(hash)).hexdigest())
+                parent = (f"{i + 1}", f"{n // 2}", hashlib.sha1(prefix2 + bytes.fromhex(tmp_dict[f"{i}{n}"])).hexdigest())
+
         else: # using the previous one
             try:
                 hash = tmp_dict[f"{i}{n-1}"]
+                parent = (f"{i + 1}", f"{n // 2}",
+                          hashlib.sha1(prefix2 + bytes.fromhex(tmp_dict[f"{i}{n}"]) + bytes.fromhex(hash)).hexdigest())
+
             except:
-                hash = ""
-            parent = (f"{i + 1}", f"{n // 2}", hashlib.sha1(prefix2 + bytes.fromhex(tmp_dict[f"{i}{n}"]) + bytes.fromhex(hash)).hexdigest())
+                parent = (f"{i + 1}", f"{n // 2}", hashlib.sha1(prefix2 + bytes.fromhex(tmp_dict[f"{i}{n}"])).hexdigest())
+
         tree.append(parent)
         tmp_dict[f"{i+1}{n // 2}"]=parent[2]
         with open(f'nodes/node{i + 1}.{n // 2}', 'w') as f:
@@ -127,11 +132,12 @@ def generate_proof(doc, position):
     i = 0
     j = position
     #proof.append(f"node{i}.{j}")
-    try:
+    """try:
         hash = tmp_dict[f"{i}{j}"]
     except:
-        hash = ""
-    proof.append((f"{i}", f"{j}", hash))
+        print("document doesn't exist")
+        sys.exit(0)
+    proof.append((f"{i}", f"{j}", hash))"""
 
     while i < depth and tree[i][0] != 0:
         if j % 2 == 0:
@@ -141,7 +147,7 @@ def generate_proof(doc, position):
                 hash= tmp_dict[f"{i}{j+1}"]
                 proof.append((f"{i}", f"{j + 1}", hash))
             except:
-                hash=""
+                proof.append((f"{i}", f"{j + 1}", ""))
 
         else:
             #print(f"node{i} {j - 1}")
@@ -150,7 +156,7 @@ def generate_proof(doc, position):
                 hash= tmp_dict[f"{i}{j-1}"]
                 proof.append((f"{i}", f"{j - 1}", hash))
             except:
-                hash=""
+                proof.append((f"{i}", f"{j - 1}", ""))
 
         i += 2 ** int(tree[i][0])
         j //= 2
@@ -168,12 +174,16 @@ def verify_proof(doc, proof):
     prefix2 = bytes.fromhex(header[3])
     root_hash = header[6]
 
-    current_hash = "" #TODO this might be a problem
+    current_hash = hash_file(doc, prefix1)
     #print(position)
     for node in proof:
+        if node[2] == "":
+            combined_hash = hashlib.sha1(prefix2 + bytes.fromhex(current_hash)).hexdigest()
         #print(f"current: {node[2]}")
-        combined_hash = hashlib.sha1(prefix2 + bytes.fromhex(current_hash) + bytes.fromhex(node[2])).hexdigest()
+        else:
+            combined_hash = hashlib.sha1(prefix2 + bytes.fromhex(current_hash) + bytes.fromhex(node[2])).hexdigest()
         current_hash = combined_hash
+        #print(combined_hash)
 
     return current_hash == root_hash
 
@@ -190,4 +200,4 @@ if __name__ == '__main__':
     update_tree(f'docs/doc2.dat', prefix1, prefix2)
     proof = generate_proof("",2) #position being 0.x
     print(f"Proof: {proof}")
-    print(f"Verifying proof: {verify_proof("", proof)}")
+    print(f"Verifying proof: {verify_proof("docs/doc2.dat", proof)}")
